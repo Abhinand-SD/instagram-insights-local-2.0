@@ -7,13 +7,18 @@ import Footer from './components/Footer';
 
 function App() {
   const [data, setData] = useState(null);
-  const [dataType, setDataType] = useState(null);
+  const [dataType, setDataType] = useState(null); // 'zip_import', 'not_following_back', 'recent_requests', etc.
+
+  // Store all data from ZIP to switch views without re-processing
+  const [zipData, setZipData] = useState(null);
+  const [activeTab, setActiveTab] = useState('not_following_back');
 
   // Stats state
   const [stats, setStats] = useState({
     followers: 0,
     following: 0,
-    notFollowingBack: 0
+    notFollowingBack: 0,
+    pendingRequests: 0
   });
 
   const handleDataLoaded = (loadedData, type) => {
@@ -71,28 +76,44 @@ function App() {
           return false;
         });
 
+        // Requests
+        const pendingRequests = loadedData.pendingRequests || [];
+
         // Update Stats
         setStats({
           followers: followersList.size,
           following: followingArray.length,
-          notFollowingBack: notFollowingBack.length
+          notFollowingBack: notFollowingBack.length,
+          pendingRequests: pendingRequests.length
+        });
+
+        // Store full processed data
+        setZipData({
+          followers: followersArray,
+          following: followingArray,
+          notFollowingBack: notFollowingBack,
+          pendingRequests: pendingRequests
         });
 
         setData(notFollowingBack);
-        setDataType('not_following_back');
+        setActiveTab('not_following_back');
+        setDataType('zip_import');
       } catch (err) {
         console.error("Error processing ZIP data", err);
         alert(`Error processing extracted data: ${err.message}`);
       }
     } else {
+      // Single file upload
       setData(loadedData);
       setDataType(type);
-      // For single files, we don't have full stats, so we zero them out or handle differently
-      // Since specific requirement is about zip upload experience, we focus on that.
+      setZipData(null); // Clear zip data on single file upload
+
+      // Update stats based on what was uploaded
       setStats({
         followers: 0,
         following: 0,
-        notFollowingBack: loadedData.length
+        notFollowingBack: type === 'not_following_back' ? loadedData.length : 0,
+        pendingRequests: type === 'pending_requests' ? loadedData.length : 0
       });
     }
   };
@@ -100,7 +121,39 @@ function App() {
   const handleReset = () => {
     setData(null);
     setDataType(null);
-    setStats({ followers: 0, following: 0, notFollowingBack: 0 });
+    setZipData(null);
+    setActiveTab('not_following_back');
+    setStats({ followers: 0, following: 0, notFollowingBack: 0, pendingRequests: 0 });
+  };
+
+  const handleTabChange = (tab) => {
+    if (!zipData) return;
+    setActiveTab(tab);
+
+    switch (tab) {
+      case 'not_following_back':
+        setData(zipData.notFollowingBack || []);
+        break;
+
+      case 'pending_requests':
+        setData(zipData.pendingRequests || []);
+        break;
+      default:
+        setData(zipData.notFollowingBack || []);
+    }
+  };
+
+  const getTitle = () => {
+    if (dataType !== 'zip_import') {
+      if (dataType === 'pending_requests') return "Sent Requests";
+      return "Not Following Back";
+    }
+
+    switch (activeTab) {
+      case 'not_following_back': return "Not Following Back";
+      case 'pending_requests': return "Sent Requests";
+      default: return "Not Following Back";
+    }
   };
 
   return (
@@ -135,33 +188,22 @@ function App() {
               className="flex flex-col gap-6"
             >
               <h2 className="text-2xl font-bold text-white mb-2 text-center md:text-left">
-                Users Not Following You Back
+                {getTitle()}
               </h2>
 
               {/* Stats Card */}
-              {dataType === 'not_following_back' && (
-                <StatsCard
-                  followersCount={stats.followers}
-                  followingCount={stats.following}
-                  notFollowingBackCount={stats.notFollowingBack}
-                  onReset={handleReset}
-                />
-              )}
-
-              {/* Reset Button for non-zip uploads (fallback) */}
-              {dataType !== 'not_following_back' && (
-                <div className="flex justify-end mb-4">
-                  <button
-                    onClick={handleReset}
-                    className="text-sm bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors"
-                  >
-                    Upload New File
-                  </button>
-                </div>
-              )}
+              <StatsCard
+                followersCount={stats.followers}
+                followingCount={stats.following}
+                notFollowingBackCount={stats.notFollowingBack}
+                pendingRequestsCount={stats.pendingRequests}
+                onReset={handleReset}
+                activeTab={zipData ? activeTab : null}
+                onTabChange={zipData ? handleTabChange : null}
+              />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {data.map((item, index) => {
+                {[...data].reverse().map((item, index) => {
                   const username = item.string_list_data?.[0]?.value || item.title || "Unknown User";
                   const profileData = {
                     ...item,

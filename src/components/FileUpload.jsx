@@ -57,7 +57,7 @@ const FileUpload = ({ onDataLoaded }) => {
                         type = 'unfollowed';
                         data = json.relationships_unfollowed_users;
                     } else {
-                        throw new Error('Unrecognized JSON structure. Upload "pending_follow_requests.json" or "recently_unfollowed_profiles.json"');
+                        throw new Error('Unrecognized JSON structure. Supported files: "pending_follow_requests.json", "recently_unfollowed_profiles.json"');
                     }
 
                     onDataLoaded(data, type);
@@ -77,6 +77,7 @@ const FileUpload = ({ onDataLoaded }) => {
 
         let followersFile = null;
         let followingFile = null;
+        let pendingRequestsFile = null;
 
         // Search for specific files recursively
         zip.forEach((relativePath, zipEntry) => {
@@ -85,6 +86,10 @@ const FileUpload = ({ onDataLoaded }) => {
             }
             if (zipEntry.name.endsWith('following.json')) {
                 followingFile = zipEntry;
+            }
+
+            if (zipEntry.name.endsWith('pending_follow_requests.json') || zipEntry.name.endsWith('follow_requests_sent.json')) {
+                pendingRequestsFile = zipEntry;
             }
         });
 
@@ -96,10 +101,22 @@ const FileUpload = ({ onDataLoaded }) => {
         const followersText = await followersFile.async('text');
         const followingText = await followingFile.async('text');
 
+
+        let pendingRequestsJson = null;
+        if (pendingRequestsFile) {
+            const text = await pendingRequestsFile.async('text');
+            const json = JSON.parse(text);
+            pendingRequestsJson = json.relationships_follow_requests_sent || [];
+        }
+
         const followersJson = JSON.parse(followersText);
         const followingJson = JSON.parse(followingText);
 
-        onDataLoaded({ followers: followersJson, following: followingJson }, 'zip_import');
+        onDataLoaded({
+            followers: followersJson,
+            following: followingJson,
+            pendingRequests: pendingRequestsJson
+        }, 'zip_import');
     };
 
     const handleDrop = useCallback((e) => {
