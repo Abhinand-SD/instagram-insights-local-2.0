@@ -4,6 +4,8 @@ import FileUpload from './components/FileUpload';
 import ProfileCard from './components/ProfileCard';
 import StatsCard from './components/StatsCard';
 import Footer from './components/Footer';
+import HowToGuide from './components/HowToGuide';
+import { HelpCircle } from 'lucide-react';
 
 function App() {
   const [data, setData] = useState(null);
@@ -12,6 +14,7 @@ function App() {
   // Store all data from ZIP to switch views without re-processing
   const [zipData, setZipData] = useState(null);
   const [activeTab, setActiveTab] = useState('not_following_back');
+  const [showGuide, setShowGuide] = useState(false);
 
   // Stats state
   const [stats, setStats] = useState({
@@ -158,7 +161,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <main className="grow px-4 py-8 max-w-6xl mx-auto w-full">
+      <main className="grow px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-10 max-w-6xl mx-auto w-full">
         <AnimatePresence mode="wait">
           {!data ? (
             <motion.div
@@ -177,7 +180,26 @@ function App() {
                   Identify users who don't follow you back instantly. Secure client-side processing.
                 </p>
               </div>
-              <FileUpload onDataLoaded={handleDataLoaded} />
+
+              <div className="w-full max-w-xl mx-auto mb-8">
+                <AnimatePresence>
+                  {showGuide && <HowToGuide onClose={() => setShowGuide(false)} />}
+                </AnimatePresence>
+
+                {!showGuide && (
+                  <div className="flex justify-center mb-6">
+                    <button
+                      onClick={() => setShowGuide(true)}
+                      className="flex items-center gap-2 text-purple-400 hover:text-purple-300 transition-colors text-sm font-medium bg-purple-500/10 hover:bg-purple-500/20 px-4 py-2 rounded-full"
+                    >
+                      <HelpCircle size={16} />
+                      How to get your data?
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {!showGuide && <FileUpload onDataLoaded={handleDataLoaded} />}
             </motion.div>
           ) : (
             <motion.div

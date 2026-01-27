@@ -136,11 +136,11 @@ const FileUpload = ({ onDataLoaded }) => {
     };
 
     return (
-        <div className="w-full max-w-xl mx-auto p-4">
+        <div className="w-full max-w-sm md:max-w-md lg:max-w-2xl mx-auto p-4 flex flex-col items-center">
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className={`relative group rounded-2xl border-2 border-dashed transition-all duration-300 p-12 text-center overflow-hidden
+                className={`relative group rounded-2xl border-2 border-dashed transition-all duration-300 p-8 md:p-10 lg:p-12 text-center overflow-hidden w-full
           ${isDragging
                         ? 'border-purple-500 bg-purple-500/10 scale-[1.02]'
                         : 'border-slate-600 hover:border-slate-500 bg-slate-900/50'

@@ -25,7 +25,7 @@ const ProfileCard = ({ profile, index }) => {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3, delay: index * 0.05 }}
-            className="glass-card p-4 flex flex-row items-center gap-4 group"
+            className="glass-card p-3 md:p-4 lg:p-5 flex flex-row items-center gap-4 group"
         >
             {/* Left side: Icon + Username */}
             <div className="flex flex-col items-center gap-2 shrink-0">

@@ -62,7 +62,7 @@ const StatsCard = ({
                     />
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3 w-full xl:w-auto">
+                <div className="flex flex-col md:flex-row lg:flex-col gap-3 w-full md:justify-center lg:justify-start xl:w-auto">
                     <button
                         onClick={() => onTabChange && onTabChange('pending_requests')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl text-white transition-all font-medium whitespace-nowrap shadow-lg hover:shadow-xl active:scale-95 w-full sm:w-auto justify-center ${activeTab === 'pending_requests'
