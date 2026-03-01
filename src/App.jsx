@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import FileUpload from './components/FileUpload';
 import ProfileCard from './components/ProfileCard';
@@ -23,6 +23,28 @@ function App() {
     notFollowingBack: 0,
     pendingRequests: 0
   });
+
+  // Load from local storage on initial mount
+  useEffect(() => {
+    const savedZipData = localStorage.getItem('instagramInsightsData');
+    if (savedZipData) {
+      try {
+        const parsed = JSON.parse(savedZipData);
+        setZipData(parsed);
+        setData(parsed.notFollowingBack || []);
+        setActiveTab('not_following_back');
+        setDataType('zip_import');
+        setStats({
+          followers: parsed.followers?.length || 0,
+          following: parsed.following?.length || 0,
+          notFollowingBack: parsed.notFollowingBack?.length || 0,
+          pendingRequests: parsed.pendingRequests?.length || 0
+        });
+      } catch (e) {
+        console.error("Error loading local storage data", e);
+      }
+    }
+  }, []);
 
   const handleDataLoaded = (loadedData, type) => {
     if (type === 'zip_import') {
@@ -90,13 +112,16 @@ function App() {
           pendingRequests: pendingRequests.length
         });
 
-        // Store full processed data
-        setZipData({
+        const newZipData = {
           followers: followersArray,
           following: followingArray,
           notFollowingBack: notFollowingBack,
           pendingRequests: pendingRequests
-        });
+        };
+
+        // Store full processed data
+        setZipData(newZipData);
+        localStorage.setItem('instagramInsightsData', JSON.stringify(newZipData));
 
         setData(notFollowingBack);
         setActiveTab('not_following_back');
@@ -110,6 +135,7 @@ function App() {
       setData(loadedData);
       setDataType(type);
       setZipData(null); // Clear zip data on single file upload
+      localStorage.removeItem('instagramInsightsData');
 
       // Update stats based on what was uploaded
       setStats({
@@ -127,6 +153,7 @@ function App() {
     setZipData(null);
     setActiveTab('not_following_back');
     setStats({ followers: 0, following: 0, notFollowingBack: 0, pendingRequests: 0 });
+    localStorage.removeItem('instagramInsightsData');
   };
 
   const handleTabChange = (tab) => {
@@ -143,6 +170,53 @@ function App() {
         break;
       default:
         setData(zipData.notFollowingBack || []);
+    }
+  };
+
+  const handleUnfollow = (usernameToUnfollow) => {
+    if (!usernameToUnfollow) return;
+
+    if (zipData) {
+      const updatedNotFollowingBack = (zipData.notFollowingBack || []).filter(item => {
+        const username = item.string_list_data?.[0]?.value || item.title;
+        return username !== usernameToUnfollow;
+      });
+      const updatedPendingRequests = (zipData.pendingRequests || []).filter(item => {
+        const username = item.string_list_data?.[0]?.value || item.title;
+        return username !== usernameToUnfollow;
+      });
+
+      const updatedZipData = {
+        ...zipData,
+        notFollowingBack: updatedNotFollowingBack,
+        pendingRequests: updatedPendingRequests
+      };
+
+      setZipData(updatedZipData);
+      localStorage.setItem('instagramInsightsData', JSON.stringify(updatedZipData));
+
+      if (activeTab === 'not_following_back') {
+        setData(updatedNotFollowingBack);
+      } else if (activeTab === 'pending_requests') {
+        setData(updatedPendingRequests);
+      }
+
+      setStats(prev => ({
+        ...prev,
+        notFollowingBack: updatedNotFollowingBack.length,
+        pendingRequests: updatedPendingRequests.length
+      }));
+    } else if (data) {
+      const updatedData = data.filter(item => {
+        const username = item.string_list_data?.[0]?.value || item.title;
+        return username !== usernameToUnfollow;
+      });
+      setData(updatedData);
+      setStats(prev => ({
+        ...prev,
+        notFollowingBack: dataType === 'not_following_back' ? updatedData.length : prev.notFollowingBack,
+        pendingRequests: dataType === 'pending_requests' ? updatedData.length : prev.pendingRequests
+      }));
     }
   };
 
@@ -241,6 +315,7 @@ function App() {
                       key={`${username}-${index}`}
                       profile={profileData}
                       index={index}
+                      onUnfollow={handleUnfollow}
                     />
                   );
                 })}
