@@ -30,20 +30,10 @@ const ProfileCard = ({ profile, index, onUnfollow }) => {
             {/* Left side: Icon + Username */}
             <div className="flex flex-col items-center gap-2 shrink-0">
                 <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-full p-1 bg-linear-to-tr from-yellow-400 via-red-500 to-purple-600">
-                    <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 border-2 border-slate-900">
-                        {imageError ? (
-                            <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-500 text-xl font-bold uppercase">
-                                {username?.slice(0, 2) || "??"}
-                            </div>
-                        ) : (
-                            <img
-                                src={`https://unavatar.io/instagram/${username}`}
-                                alt={username}
-                                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                onError={() => setImageError(true)}
-                                loading="lazy"
-                            />
-                        )}
+                    <div className="w-full h-full rounded-full overflow-hidden bg-slate-900 border-2 border-slate-900 flex items-center justify-center">
+                        <span className="text-slate-300 text-xl font-bold uppercase tracking-wider">
+                            {username?.slice(0, 2) || "??"}
+                        </span>
                     </div>
                 </div>
                 <h3 className="text-sm sm:text-base font-bold text-white text-center max-w-[80px] truncate" title={username}>

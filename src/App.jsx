@@ -5,7 +5,7 @@ import ProfileCard from './components/ProfileCard';
 import StatsCard from './components/StatsCard';
 import Footer from './components/Footer';
 import HowToGuide from './components/HowToGuide';
-import { HelpCircle } from 'lucide-react';
+import { HelpCircle, ArrowDownUp } from 'lucide-react';
 
 function App() {
   const [data, setData] = useState(null);
@@ -15,6 +15,7 @@ function App() {
   const [zipData, setZipData] = useState(null);
   const [activeTab, setActiveTab] = useState('not_following_back');
   const [showGuide, setShowGuide] = useState(false);
+  const [sortOrder, setSortOrder] = useState('latest');
 
   // Stats state
   const [stats, setStats] = useState({
@@ -152,6 +153,7 @@ function App() {
     setDataType(null);
     setZipData(null);
     setActiveTab('not_following_back');
+    setSortOrder('latest');
     setStats({ followers: 0, following: 0, notFollowingBack: 0, pendingRequests: 0 });
     localStorage.removeItem('instagramInsightsData');
   };
@@ -233,6 +235,22 @@ function App() {
     }
   };
 
+  // Sort logic function
+  const getSortedData = () => {
+    if (!data) return [];
+
+    return [...data].sort((a, b) => {
+      const timeA = a.string_list_data?.[0]?.timestamp || 0;
+      const timeB = b.string_list_data?.[0]?.timestamp || 0;
+
+      if (sortOrder === 'latest') {
+        return timeB - timeA; // Descending (newest first)
+      } else {
+        return timeA - timeB; // Ascending (oldest first)
+      }
+    });
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <main className="grow px-4 md:px-6 lg:px-8 py-6 md:py-8 lg:py-10 max-w-6xl mx-auto w-full">
@@ -298,27 +316,60 @@ function App() {
                 onTabChange={zipData ? handleTabChange : null}
               />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {[...data].reverse().map((item, index) => {
-                  const username = item.string_list_data?.[0]?.value || item.title || "Unknown User";
-                  const profileData = {
-                    ...item,
-                    string_list_data: [{
-                      ...(item.string_list_data?.[0] || {}),
-                      value: username,
-                      timestamp: item.string_list_data?.[0]?.timestamp || Math.floor(Date.now() / 1000)
-                    }]
-                  };
+              {/* Filter and Card Grid Container */}
+              <div className="flex flex-col gap-4">
+                {/* Filter Dropdown */}
+                <div className="flex justify-end mb-4 relative z-10">
+                  <div className="flex items-center gap-3 bg-slate-900/60 backdrop-blur-md p-1.5 rounded-xl shadow-lg shadow-black/20">
 
-                  return (
-                    <ProfileCard
-                      key={`${username}-${index}`}
-                      profile={profileData}
-                      index={index}
-                      onUnfollow={handleUnfollow}
-                    />
-                  );
-                })}
+                    <div className="flex items-center gap-1.5 pl-3 pr-1 text-slate-400">
+                      <ArrowDownUp size={14} className="text-purple-400" />
+                      <span className="text-xs font-semibold tracking-wider uppercase">Sort by:</span>
+                    </div>
+
+                    <div className="relative flex items-center transition-colors">
+                      <select
+                        value={sortOrder}
+                        onChange={(e) => setSortOrder(e.target.value)}
+                        className="bg-transparent text-sm text-white font-medium hover:text-purple-300 transition-colors focus:outline-none cursor-pointer py-1.5 pl-2 pr-8 w-full appearance-none relative z-10"
+                      >
+                        <option value="latest" className="bg-slate-800 text-white py-2">Latest First</option>
+                        <option value="earliest" className="bg-slate-800 text-white py-2">Earliest First</option>
+                      </select>
+                      {/* Custom dropdown arrow */}
+                      <div className="absolute right-2 pointer-events-none text-slate-400 z-0">
+                        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* Card Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {getSortedData().map((item, index) => {
+                    const username = item.string_list_data?.[0]?.value || item.title || "Unknown User";
+                    const profileData = {
+                      ...item,
+                      string_list_data: [{
+                        ...(item.string_list_data?.[0] || {}),
+                        value: username,
+                        timestamp: item.string_list_data?.[0]?.timestamp || Math.floor(Date.now() / 1000)
+                      }]
+                    };
+
+                    return (
+                      <ProfileCard
+                        key={`${username}-${index}`}
+                        profile={profileData}
+                        index={index}
+                        onUnfollow={handleUnfollow}
+                      />
+                    );
+                  })}
+                </div>
               </div>
             </motion.div>
           )}
