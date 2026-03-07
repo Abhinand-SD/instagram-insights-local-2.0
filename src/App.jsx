@@ -16,6 +16,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('not_following_back');
   const [showGuide, setShowGuide] = useState(false);
   const [sortOrder, setSortOrder] = useState('latest');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Stats state
   const [stats, setStats] = useState({
@@ -154,6 +155,7 @@ function App() {
     setZipData(null);
     setActiveTab('not_following_back');
     setSortOrder('latest');
+    setSearchQuery('');
     setStats({ followers: 0, following: 0, notFollowingBack: 0, pendingRequests: 0 });
     localStorage.removeItem('instagramInsightsData');
   };
@@ -161,14 +163,20 @@ function App() {
   const handleTabChange = (tab) => {
     if (!zipData) return;
     setActiveTab(tab);
+    setSearchQuery('');
 
     switch (tab) {
       case 'not_following_back':
         setData(zipData.notFollowingBack || []);
         break;
-
       case 'pending_requests':
         setData(zipData.pendingRequests || []);
+        break;
+      case 'followers':
+        setData(zipData.followers || []);
+        break;
+      case 'following':
+        setData(zipData.following || []);
         break;
       default:
         setData(zipData.notFollowingBack || []);
@@ -187,11 +195,16 @@ function App() {
         const username = item.string_list_data?.[0]?.value || item.title;
         return username !== usernameToUnfollow;
       });
+      const updatedFollowing = (zipData.following || []).filter(item => {
+        const username = item.string_list_data?.[0]?.value || item.title;
+        return username !== usernameToUnfollow;
+      });
 
       const updatedZipData = {
         ...zipData,
         notFollowingBack: updatedNotFollowingBack,
-        pendingRequests: updatedPendingRequests
+        pendingRequests: updatedPendingRequests,
+        following: updatedFollowing
       };
 
       setZipData(updatedZipData);
@@ -201,12 +214,15 @@ function App() {
         setData(updatedNotFollowingBack);
       } else if (activeTab === 'pending_requests') {
         setData(updatedPendingRequests);
+      } else if (activeTab === 'following') {
+        setData(updatedFollowing);
       }
 
       setStats(prev => ({
         ...prev,
         notFollowingBack: updatedNotFollowingBack.length,
-        pendingRequests: updatedPendingRequests.length
+        pendingRequests: updatedPendingRequests.length,
+        following: updatedFollowing.length
       }));
     } else if (data) {
       const updatedData = data.filter(item => {
@@ -231,15 +247,26 @@ function App() {
     switch (activeTab) {
       case 'not_following_back': return "Not Following Back";
       case 'pending_requests': return "Sent Requests";
+      case 'followers': return "Your Followers";
+      case 'following': return "Following";
       default: return "Not Following Back";
     }
   };
 
-  // Sort logic function
+  // Sort and filter logic function
   const getSortedData = () => {
     if (!data) return [];
 
-    return [...data].sort((a, b) => {
+    let filteredData = [...data];
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filteredData = filteredData.filter(item => {
+        const username = item.string_list_data?.[0]?.value || item.title || "";
+        return username.toLowerCase().includes(query);
+      });
+    }
+
+    return filteredData.sort((a, b) => {
       const timeA = a.string_list_data?.[0]?.timestamp || 0;
       const timeB = b.string_list_data?.[0]?.timestamp || 0;
 
@@ -318,32 +345,49 @@ function App() {
 
               {/* Filter and Card Grid Container */}
               <div className="flex flex-col gap-4">
-                {/* Filter Dropdown */}
-                <div className="flex justify-end mb-4 relative z-10">
-                  <div className="flex items-center gap-3 bg-slate-900/60 backdrop-blur-md p-1.5 rounded-xl shadow-lg shadow-black/20">
+                {/* Search and Filter Row */}
+                <div className={`flex flex-col sm:flex-row ${activeTab !== 'not_following_back' ? 'justify-between' : 'justify-end'} items-center gap-4 mb-4 relative z-10 w-full`}>
 
-                    <div className="flex items-center gap-1.5 pl-3 pr-1 text-slate-400">
-                      <ArrowDownUp size={14} className="text-purple-400" />
-                      <span className="text-xs font-semibold tracking-wider uppercase">Sort by:</span>
+                  {/* Search Bar */}
+                  {activeTab !== 'not_following_back' && (
+                    <div className="w-full sm:w-1/2 md:w-1/3">
+                      <input
+                        type="text"
+                        placeholder="Search users..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full bg-slate-900/60 backdrop-blur-md px-4 py-2.5 rounded-xl text-sm text-white placeholder-slate-400 border border-white/10 shadow-lg shadow-black/20 focus:outline-none focus:border-purple-500/50 transition-colors"
+                      />
                     </div>
+                  )}
 
-                    <div className="relative flex items-center transition-colors">
-                      <select
-                        value={sortOrder}
-                        onChange={(e) => setSortOrder(e.target.value)}
-                        className="bg-transparent text-sm text-white font-medium hover:text-purple-300 transition-colors focus:outline-none cursor-pointer py-1.5 pl-2 pr-8 w-full appearance-none relative z-10"
-                      >
-                        <option value="latest" className="bg-slate-800 text-white py-2">Latest First</option>
-                        <option value="earliest" className="bg-slate-800 text-white py-2">Earliest First</option>
-                      </select>
-                      {/* Custom dropdown arrow */}
-                      <div className="absolute right-2 pointer-events-none text-slate-400 z-0">
-                        <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                  {/* Filter Dropdown */}
+                  <div className="flex justify-end w-full sm:w-auto">
+                    <div className="flex items-center gap-3 bg-slate-900/60 backdrop-blur-md p-1.5 rounded-xl border border-white/10 shadow-lg shadow-black/20">
+
+                      <div className="flex items-center gap-1.5 pl-3 pr-1 text-slate-400">
+                        <ArrowDownUp size={14} className="text-purple-400" />
+                        <span className="text-xs font-semibold tracking-wider uppercase">Sort by:</span>
                       </div>
-                    </div>
 
+                      <div className="relative flex items-center transition-colors">
+                        <select
+                          value={sortOrder}
+                          onChange={(e) => setSortOrder(e.target.value)}
+                          className="bg-transparent text-sm text-white font-medium hover:text-purple-300 transition-colors focus:outline-none cursor-pointer py-1.5 pl-2 pr-8 w-full appearance-none relative z-10"
+                        >
+                          <option value="latest" className="bg-slate-800 text-white py-2">Latest First</option>
+                          <option value="earliest" className="bg-slate-800 text-white py-2">Earliest First</option>
+                        </select>
+                        {/* Custom dropdown arrow */}
+                        <div className="absolute right-2 pointer-events-none text-slate-400 z-0">
+                          <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      </div>
+
+                    </div>
                   </div>
                 </div>
 
@@ -366,6 +410,7 @@ function App() {
                         profile={profileData}
                         index={index}
                         onUnfollow={handleUnfollow}
+                        actionLabel={activeTab === 'followers' ? 'Remove' : 'Unfollow'}
                       />
                     );
                   })}

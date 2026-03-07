@@ -43,14 +43,18 @@ const StatsCard = ({
                         label="Followers"
                         value={followersCount}
                         color="bg-blue-500"
-                        disabled={true}
+                        onClick={() => onTabChange && onTabChange('followers')}
+                        isActive={activeTab === 'followers'}
+                        disabled={!onTabChange}
                     />
                     <StatItem
                         icon={UserCheck}
                         label="Following"
                         value={followingCount}
                         color="bg-green-500"
-                        disabled={true}
+                        onClick={() => onTabChange && onTabChange('following')}
+                        isActive={activeTab === 'following'}
+                        disabled={!onTabChange}
                     />
                     <StatItem
                         icon={UserMinus}

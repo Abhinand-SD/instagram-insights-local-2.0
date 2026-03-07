@@ -2,14 +2,12 @@ import React, { useState } from 'react';
 import { ExternalLink, UserMinus } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const ProfileCard = ({ profile, index, onUnfollow }) => {
+const ProfileCard = ({ profile, index, onUnfollow, actionLabel = "Unfollow" }) => {
     // Safe access to nested data
     const data = profile.string_list_data?.[0] || {};
     const username = data.value;
     const href = data.href;
     const timestamp = data.timestamp;
-
-    const [imageError, setImageError] = useState(false);
 
     const formatDate = (ts) => {
         if (!ts) return 'Unknown date';
@@ -47,18 +45,20 @@ const ProfileCard = ({ profile, index, onUnfollow }) => {
                     Followed: {formatDate(timestamp)}
                 </p>
 
-                <a
-                    href={href || `https://www.instagram.com/${username}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => {
-                        if (onUnfollow) onUnfollow(username);
-                    }}
-                    className="inline-flex items-center justify-center gap-2 bg-slate-700 hover:bg-red-500/80 text-white py-2 px-4 rounded-lg transition-all duration-300 font-medium text-sm group-hover:shadow-lg hover:shadow-red-500/20"
-                >
-                    <UserMinus size={16} />
-                    <span>Unfollow</span>
-                </a>
+                {actionLabel && (
+                    <a
+                        href={href || `https://www.instagram.com/${username}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => {
+                            if (onUnfollow) onUnfollow(username);
+                        }}
+                        className="inline-flex items-center justify-center gap-2 bg-slate-700 hover:bg-red-500/80 text-white py-2 px-4 rounded-lg transition-all duration-300 font-medium text-sm group-hover:shadow-lg hover:shadow-red-500/20"
+                    >
+                        <UserMinus size={16} />
+                        <span>{actionLabel}</span>
+                    </a>
+                )}
             </div>
         </motion.div>
     );
